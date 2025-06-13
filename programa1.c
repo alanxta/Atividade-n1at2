@@ -7,8 +7,7 @@ typedef enum {
     TIPO_INTEIRO,
     TIPO_BOOLEANO,
     TIPO_DECIMAL,
-    TIPO_TEXTO,
-    TIPO_DESCONHECIDO
+    TIPO_TEXTO
 } TipoDado;
 
 
@@ -20,14 +19,14 @@ typedef struct {
     TipoDado tipo;
 } Registro;
 
+
+
 typedef struct {
     char nome[50];
     Registro** dados;
     int qtd;
     int tam;
 } Sensor;
-
-
 
 
 
@@ -41,17 +40,6 @@ TipoDado pegaTipos(const char* str) {
     return TIPO_TEXTO;
 }
 
-
-
-void iniciaSensores(Sensor* s, const char* nome) {
-    strcpy(s->nome, nome);
-    s->qtd = 0;
-    s->tam = 10;
-    s->dados = malloc(s->tam * sizeof(Registro*));
-}
-
-
-
 void adicionarDado(Sensor* s, Registro* r) {
     if (s->qtd == s->tam) {
         s->tam *= 2;
@@ -63,30 +51,15 @@ void adicionarDado(Sensor* s, Registro* r) {
 
 
 
-void* pegarValores(const char* str, TipoDado tipo) {
-    void* dado = NULL;
-    switch (tipo) {
-        case TIPO_INTEIRO:
-            dado = malloc(sizeof(int));
-            if (dado) *(int*)dado = atoi(str);
-            break;
-        case TIPO_BOOLEANO:
-            dado = malloc(sizeof(bool));
-            if (dado) *(bool*)dado = (strcmp(str, "true") == 0 || strcmp(str, "1") == 0);
-            break;
-        case TIPO_DECIMAL:
-            dado = malloc(sizeof(float));
-            if (dado) *(float*)dado = atof(str);
-            break;
-        case TIPO_TEXTO:
-            dado = malloc(strlen(str) + 1);
-            if (dado) strcpy((char*)dado, str);
-            break;
-        default:
-            break;
-    }
-    return dado;
+
+void iniciaSensores(Sensor* s, const char* nome) {
+    strcpy(s->nome, nome);
+    s->qtd = 0;
+    s->tam = 10;
+    s->dados = malloc(s->tam * sizeof(Registro*));
 }
+
+
 
 
 
@@ -104,47 +77,74 @@ void ordenacao(Registro** lista, int n) {
 }
 
 
-
-
 void liberar(Sensor* s) {
     for (int i = 0; i < s->qtd; i++) {
-        if (s->dados[i]->valor) {
-            free(s->dados[i]->valor);
-        }
+        if (s->dados[i]->valor) free(s->dados[i]->valor);
         free(s->dados[i]);
     }
     free(s->dados);
 }
 
-
+void* pegarValores(const char* str, TipoDado tipo) {
+    void* dado = NULL;
+    switch (tipo) {
+        case TIPO_INTEIRO:
+            dado = malloc(sizeof(int));
+            if (dado) *(int*)dado = atoi(str);
+            break;
+        case TIPO_BOOLEANO:
+            dado = malloc(sizeof(bool));
+            if (dado) *(bool*)dado = (strcmp(str, "true") == 0);
+            break;
+        case TIPO_DECIMAL:
+            dado = malloc(sizeof(float));
+            if (dado) *(float*)dado = atof(str);
+            break;
+        case TIPO_TEXTO:
+            dado = malloc(strlen(str) + 1);
+            if (dado) strcpy((char*)dado, str);
+            break;
+    }
+    return dado;
+}
 
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        printf("Uso: %s <arquivo>\n", argv[0]);
+        printf("Uso: %s <arquivo_de_entrada>\n", argv[0]);
         return 1;
     }
 
+
+
     FILE* arquivo = fopen(argv[1], "r");
     if (!arquivo) {
-        printf("Erro ao abrir arquivo\n");
+        printf("Erro ao abrir arquivo.\n");
         return 1;
     }
+
+
 
     Sensor* lista[100];
     int total = 0;
     char linha[256];
 
+
     while (fgets(linha, sizeof(linha), arquivo)) {
         long t;
         char id[50], val[100];
 
-        if (sscanf(linha, "%lld %s %s", &t, id, val) != 3) continue;
+        if (sscanf(linha, "%ld %49s %99s", &t, id, val) != 3) {
+            printf("Linha inválida: %s", linha);
+            continue;
+        }
 
         TipoDado tipo = pegaTipos(val);
         void* dado = pegarValores(val, tipo);
-        if (!dado) continue;
-
+        if (!dado) {
+            printf("Valor inválido ignorado: %s\n", val);
+            continue;
+        }
 
 
         Registro* novo = malloc(sizeof(Registro));
@@ -161,21 +161,19 @@ int main(int argc, char* argv[]) {
             }
         }
 
-
-
         if (pos == -1) {
             if (total >= 100) continue;
             lista[total] = malloc(sizeof(Sensor));
             iniciaSensores(lista[total], id);
-            pos = total;
-            total++;
+            pos = total++;
         }
+
+
 
         adicionarDado(lista[pos], novo);
     }
+
     fclose(arquivo);
-
-
 
     for (int i = 0; i < total; i++) {
         Sensor* s = lista[i];
@@ -188,21 +186,14 @@ int main(int argc, char* argv[]) {
 
         for (int j = 0; j < s->qtd; j++) {
             Registro* r = s->dados[j];
-            fprintf(out, "%lld %s ", r->tempo, r->id);
+            fprintf(out, "%ld %s ", r->tempo, r->id);
             switch (r->tipo) {
-                case TIPO_INTEIRO:
-                    fprintf(out, "%d\n", *((int*)r->valor)); break;
-                case TIPO_BOOLEANO:
-                    fprintf(out, "%s\n", *((bool*)r->valor) ? "true" : "false"); break;
-                case TIPO_DECIMAL:
-                    fprintf(out, "%.2f\n", *((float*)r->valor)); break;
-                case TIPO_TEXTO:
-                    fprintf(out, "%s\n", (char*)r->valor); break;
-                default: break;
+                case TIPO_INTEIRO: fprintf(out, "%d\n", *((int*)r->valor)); break;
+                case TIPO_BOOLEANO: fprintf(out, "%s\n", *((bool*)r->valor) ? "true" : "false"); break;
+                case TIPO_DECIMAL: fprintf(out, "%.2f\n", *((float*)r->valor)); break;
+                case TIPO_TEXTO: fprintf(out, "%s\n", (char*)r->valor); break;
             }
         }
-
-
 
         fclose(out);
         liberar(s);
