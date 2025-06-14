@@ -5,7 +5,8 @@ O programa 1 vai realizar várias leituras de sensores e separar essas leituras 
 O programa 2 irá realizar uma busca binária para encontrar a leitura mais próxima do tempo inserido
 O programa 3 gera os arquivos no dados.txt com os sensores tendo 2000 linhas para cada sensor
 
-Exemplos e ordem para compilação dos programas
+
+Exemplos e ordem para compilação dos programas no terminal
 
 Criar os arquivos executáveis:
 
