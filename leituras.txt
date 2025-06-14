@@ -1,5 +1,0 @@
-1718053001 sensorA 10
-1718053012 sensorA 15
-1718053020 sensorB true
-1718053035 sensorC 3.14
-1718053050 sensorD codigoAAAA
